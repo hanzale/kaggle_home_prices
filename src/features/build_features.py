@@ -10,6 +10,21 @@ from sklearn.metrics.pairwise import rbf_kernel
 
 from sklearn.cluster import KMeans
 
+obvious_features = ['1stFlrSF', '2ndFlrSF', 'BsmtFinSF1', 'Fireplaces', 'FullBath', 'GarageArea', 
+                    'GarageCars', 'GrLivArea', 'LotFrontage', 'MasVnrArea', 'OpenPorchSF', 
+                    'SalePrice', 'TotRmsAbvGrd', 'TotalBsmtSF', 'WoodDeckSF']
+
+categoric_columns = ['MSSubClass', 'MSZoning', 'Street', 'Alley', 'LotShape', 'LandContour',
+       'Utilities', 'LotConfig', 'LandSlope', 'Neighborhood', 'Condition1',
+       'Condition2', 'BldgType', 'HouseStyle', 'OverallQual', 'OverallCond',
+       'RoofStyle', 'RoofMatl', 'Exterior1st', 'Exterior2nd', 'MasVnrType',
+       'ExterQual', 'ExterCond', 'Foundation', 'BsmtQual', 'BsmtCond',
+       'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'Heating', 'HeatingQC',
+       'CentralAir', 'Electrical', 'KitchenQual', 'Functional', 'FireplaceQu',
+       'GarageType', 'GarageFinish', 'GarageQual', 'GarageCond', 'PavedDrive',
+       'PoolQC', 'Fence', 'MiscFeature', 'SaleType', 'SaleCondition']
+
+
 class ClusterSimilarity(BaseEstimator, TransformerMixin):
     def __init__(self, n_clusters=10, gamma=1.0, random_state=None):
         self.n_clusters = n_clusters
@@ -28,7 +43,6 @@ class ClusterSimilarity(BaseEstimator, TransformerMixin):
         return [f"Cluster {i} similarity" for i in range(self.n_clusters)]
 
 
-cat_pipeline = make_pipeline( SimpleImputer(strategy="most_frequent"), OneHotEncoder(handle_unknown="ignore"))
 
 def column_ratio(X):
     return X[:, [0]] / X[:, [1]]
@@ -47,18 +61,24 @@ log_pipeline = make_pipeline(
     StandardScaler(),
     memory=os.path.join(os.getcwd(), 'models'))
 
+
 cluster_simil = ClusterSimilarity(n_clusters=10, gamma=1., random_state=0)
 
+cat_pipeline = make_pipeline( SimpleImputer(strategy="most_frequent"), OneHotEncoder(handle_unknown="ignore"))
 default_num_pipeline = make_pipeline(
-    SimpleImputer(strategy="median"),
+    SimpleImputer(strategy="median",),
     StandardScaler())
 
+"""
+("bedrooms", ratio_pipeline(), ["total_bedrooms", "total_rooms"]),
+("rooms_per_house", ratio_pipeline(), ["total_rooms", "households"]),
+("people_per_house", ratio_pipeline(), ["population", "households"]),
+("log", log_pipeline, ["total_bedrooms", "total_rooms", "population","households", "median_income"]),
+("geo", cluster_simil, ["latitude", "longitude"]),
+"""
+
 preprocessing = ColumnTransformer(transformers=[
-    ("bedrooms", ratio_pipeline(), ["total_bedrooms", "total_rooms"]),
-    ("rooms_per_house", ratio_pipeline(), ["total_rooms", "households"]),
-    ("people_per_house", ratio_pipeline(), ["population", "households"]),
-    ("log", log_pipeline, ["total_bedrooms", "total_rooms", "population","households", "median_income"]),
-    ("geo", cluster_simil, ["latitude", "longitude"]),
+    # impute & onehot encode categorical columns
     ("cat", cat_pipeline, make_column_selector(dtype_include=object))
     ],
     remainder=default_num_pipeline) # one column remaining: <housing_median_age
@@ -70,6 +90,6 @@ def export_preprocess(preprocessing=preprocessing):
 
 export_preprocess()
 
-
 if __name__ == '__main__':
     pass
+

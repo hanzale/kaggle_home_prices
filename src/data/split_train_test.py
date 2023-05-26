@@ -1,16 +1,19 @@
 import os, sys
+project_dir = os.getcwd()
+sys.path.append(project_dir)
+
 import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
-
+from src.data.read_data import raw_data
 class Split():
     def __init__(self) -> None:
-        self.raw_path = os.path.join('data/raw/housing')
-        self.output_path = os.path.join('data/interim/')
+        self.raw_path = os.path.join(os.getcwd(), 'data/raw/test.csv')
+        self.output_path = os.path.join(os.getcwd(), 'data/interim/')
         self.output_files = ["X_train.csv", "X_valid.csv", "y_train.csv", "y_valid.csv"]
-        self.raw_data = pd.read_csv( self.raw_path.joinpath('housing.csv') )
+        self.raw_data = raw_data()
         self.check()
 
     def check(self):
@@ -31,10 +34,10 @@ class Split():
         train, valid = train_test_split(self.raw_data, train_size=0.8, test_size=0.2, random_state=0)
 
         #split features (X) and target (y)
-        X_train = train[ [col for col in train.columns if col != 'median_house_value'] ]
-        y_train = train['median_house_value']
-        X_valid = valid[ [col for col in valid.columns if col != 'median_house_value'] ]
-        y_valid = valid['median_house_value']
+        X_train = train[ [col for col in train.columns if col != 'SalePrice'] ]
+        y_train = train['SalePrice']
+        X_valid = valid[ [col for col in valid.columns if col != 'SalePrice'] ]
+        y_valid = valid['SalePrice']
 
         self.write(X_train, X_valid, y_train, y_valid)
         
@@ -42,16 +45,17 @@ class Split():
     def strat(self):
         logging.info('Splitting the data stratified by target  into test (%80) & train (%20) with "sklearn.StratifiedShuffleSplit"' )
 
-        self.raw_data["income_cat"] = pd.cut(self.raw_data["median_income"], bins=[0., 1.5, 3.0, 4.5, 6., np.inf], labels=[1, 2, 3, 4, 5])
-        train, valid = train_test_split(self.raw_data, test_size=0.2, stratify=self.raw_data['income_cat'], random_state=0)
+        bins=[self.raw_data['SalePrice'].min()-1, self.raw_data['SalePrice'].quantile(0.25), self.raw_data['SalePrice'].quantile(0.5), self.raw_data['SalePrice'].quantile(0.75), self.raw_data['SalePrice'].max()]
+        self.raw_data["price_cat"] = pd.cut(self.raw_data["SalePrice"], bins=bins, labels=[0, 1, 2, 3])
+        train, valid = train_test_split(self.raw_data, test_size=0.2, stratify=self.raw_data['price_cat'], random_state=0)
 
-        train.drop(columns=['income_cat'], axis=1, inplace=True)
-        valid.drop(columns=['income_cat'], axis=1, inplace=True)
+        train.drop(columns=['price_cat'], axis=1, inplace=True)
+        valid.drop(columns=['price_cat'], axis=1, inplace=True)
 
-        X_train = train[ [col for col in train.columns if col != 'median_house_value'] ]
-        y_train = train['median_house_value']
-        X_valid = valid[ [col for col in valid.columns if col != 'median_house_value'] ]
-        y_valid = valid['median_house_value']
+        X_train = train[ [col for col in train.columns if col != 'SalePrice'] ]
+        y_train = train['SalePrice']
+        X_valid = valid[ [col for col in valid.columns if col != 'SalePrice'] ]
+        y_valid = valid['SalePrice']
 
         self.write(X_train, X_valid, y_train, y_valid)
 
@@ -59,10 +63,11 @@ class Split():
         logger = logging.getLogger(__file__)
         logger.info('Saving to /data/interim as csv files with names X/y train/value' )
 
-        pd.DataFrame.to_csv(X_train, self.output_path.joinpath('X_train.csv'), index=True)
-        pd.DataFrame.to_csv(X_valid, self.output_path.joinpath('X_valid.csv'), index=True)
-        pd.DataFrame.to_csv(y_train, self.output_path.joinpath('y_train.csv'), index=True)
-        pd.DataFrame.to_csv(y_valid, self.output_path.joinpath('y_valid.csv'), index=True)
+        pd.DataFrame.to_csv(X_train, os.path.join(self.output_path,'X_train.csv'), index=True)
+        pd.DataFrame.to_csv(X_valid, os.path.join(self.output_path,'X_valid.csv'), index=True)
+        pd.DataFrame.to_csv(y_train, os.path.join(self.output_path,'y_train.csv'), index=True)
+        pd.DataFrame.to_csv(y_valid, os.path.join(self.output_path,'y_valid.csv'), index=True)
+
 
 
 
@@ -70,5 +75,5 @@ if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
-    project_dir = os.getcwd()
-    sys.path.append(project_dir)
+    #x = Split()
+    #x.strat()

@@ -8,20 +8,23 @@ import pandas as pd
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
-from src.features.build_features import preprocessing
-from src.data.read_data import X_train,X_valid,y_train,y_valid
+#from src.features.build_features import preprocessing
+from src.data.read_data import split_data
+
+X_train,X_valid,y_train,y_valid = split_data()
+del X_valid, y_valid
 
 class Train():
     def __init__(self,) -> None:
         pass
 
     def linear_regression(self) -> LinearRegression():
-        lin_reg_pipe = make_pipeline( self.import_preprocessor(), LinearRegression())
+        lin_reg_pipe = make_pipeline( self.import_preprocessor(),  LinearRegression())
         lin_reg_pipe.fit(X_train,y_train)
         return lin_reg_pipe
     
-    def tree_regressor(self) -> DecisionTreeRegressor:
-        tree_reg = make_pipeline( self.import_preprocessor(), DecisionTreeRegressor(max_depth=100 random_state=0))
+    def tree_regressor(self) -> DecisionTreeRegressor():
+        tree_reg = make_pipeline( self.import_preprocessor(), DecisionTreeRegressor(max_depth=100, random_state=0) )
         tree_reg.fit(X_train, y_train)
         return tree_reg
     

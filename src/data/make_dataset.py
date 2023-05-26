@@ -23,3 +23,5 @@ if __name__ == '__main__':
     Split()
 
     main()
+
+data_missing_columns = raw_data.columns[raw_data.isna().any()]
