@@ -1,6 +1,5 @@
-import sys, os
+import sys, os, joblib
 import numpy as np
-from joblib import dump, load
 from sklearn.pipeline import make_pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.impute import SimpleImputer
@@ -43,31 +42,36 @@ class ClusterSimilarity(BaseEstimator, TransformerMixin):
         return [f"Cluster {i} similarity" for i in range(self.n_clusters)]
 
 
-
-def column_ratio(X):
+def column_ratio(X=None):
     return X[:, [0]] / X[:, [1]]
+
 def ratio_name(function_transformer, feature_names_in):
     return ["ratio"] # feature names out
+
 def ratio_pipeline():
-    return make_pipeline(
+    make_pipeline(
         SimpleImputer(strategy="median"),
         FunctionTransformer(column_ratio, feature_names_out=ratio_name),
         StandardScaler(),
-        memory=os.path.join(os.getcwd(), 'models'))
+        memory=os.path.join(os.getcwd(), 'models') 
+        )
+
+def conv_column(X):
+    return X[:, 0] == X[:, 0].astype('category')
+conv_dtype_to_cat = FunctionTransformer(conv_column, feature_names_out='one-to-one')
 
 log_pipeline = make_pipeline(
     SimpleImputer(strategy="median"),
     FunctionTransformer(np.log, feature_names_out="one-to-one"),
     StandardScaler(),
-    memory=os.path.join(os.getcwd(), 'models'))
+    memory=os.path.join(os.getcwd(), 'models')
+    )
 
 
 cluster_simil = ClusterSimilarity(n_clusters=10, gamma=1., random_state=0)
 
 cat_pipeline = make_pipeline( SimpleImputer(strategy="most_frequent"), OneHotEncoder(handle_unknown="ignore"))
-default_num_pipeline = make_pipeline(
-    SimpleImputer(strategy="median",),
-    StandardScaler())
+default_num_pipeline = make_pipeline( SimpleImputer(strategy="median"), StandardScaler(), memory=os.path.join(os.getcwd(), 'models'))
 
 """
 ("bedrooms", ratio_pipeline(), ["total_bedrooms", "total_rooms"]),
@@ -77,16 +81,21 @@ default_num_pipeline = make_pipeline(
 ("geo", cluster_simil, ["latitude", "longitude"]),
 """
 
+
 preprocessing = ColumnTransformer(transformers=[
+
+    #divide two cols with each other
+    #('average_room_size', ratio_pipeline(), ['GrLivArea', 'TotRmsAbvGrd']),
     # impute & onehot encode categorical columns
-    ("cat", cat_pipeline, make_column_selector(dtype_include=object))
+    ("cat", cat_pipeline, make_column_selector(dtype_include=object)),
     ],
-    remainder=default_num_pipeline) # one column remaining: <housing_median_age
+    remainder=default_num_pipeline)
+
 
 def export_preprocess(preprocessing=preprocessing):
     project_dir = os.getcwd()
     output_file = os.path.join(project_dir, 'models/first_preprocessor.joblib' )
-    dump(preprocessing, output_file)
+    joblib.dump(preprocessing, output_file)
 
 export_preprocess()
 

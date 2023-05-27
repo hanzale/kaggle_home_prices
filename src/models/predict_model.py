@@ -10,18 +10,22 @@ from joblib import dump, load
 
 X_train,X_valid,y_train,y_valid = split_data()
 
-linear_model_pipeline_trained = Train().linear_regression()
+#linear_model_pipeline_trained = Train().linear_regression()
 #tree_reg_model_pipeline_trained = Train().tree_regressor()
+#xg_boost = Train().xgb_regressor()
+#Train.export_model(xg_boost, 'xg_boost')
+#model = xg_boost
 
-#Train.export_model(model=linear_model_pipeline_trained )
-model = joblib.load( os.path.join(project_dir, 'models/first_model.joblib') )
+#Train.export_model(model=linear_model_pipeline_trained, model_name='linear_model' )
+model = joblib.load( os.path.join(project_dir, 'models/random_forest.joblib') )
 
-predictions = model.score(X_valid, y_valid)
+predictions = model.predict(X_valid)
+print(y_valid.shape)
+#print(predictions.shape)
+
+res = mean_squared_error(y_valid, predictions, squared=False)
+print(res)
 
 
-#res = mean_squared_error(y_valid, predictions, squared=False)
-
-
-print("Score:", predictions )
 #print("Mean squared Error:", res)
 
